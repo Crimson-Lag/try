@@ -1,95 +1,118 @@
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- UI Setup
-local screenGui = Instance.new("ScreenGui", playerGui)
-screenGui.Name = "PetEditorUI"
+-- Reference to your Pet UI Panel
+local petPanel = playerGui:WaitForChild("PetPanel") -- change this to your actual GUI name
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 180)
-frame.Position = UDim2.new(0.5, -110, 0.5, -90)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
+-- Selected pet frame
+local selectedPetFrame = nil
 
--- Title
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 0, 40)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.Text = "🐾 Edit Pet Stats"
-title.TextColor3 = Color3.fromRGB(130, 255, 130)
-title.TextScaled = true
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.Parent = frame
-
--- Close Button
-local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -35, 0, 5)
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextScaled = true
-closeButton.Parent = frame
-
--- Weight Input
-local weightBox = Instance.new("TextBox")
-weightBox.Size = UDim2.new(1, -20, 0, 35)
-weightBox.Position = UDim2.new(0, 10, 0, 50)
-weightBox.PlaceholderText = "Weight (kg)"
-weightBox.Text = ""
-weightBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-weightBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-weightBox.Font = Enum.Font.Gotham
-weightBox.TextScaled = true
-weightBox.Parent = frame
-
--- Age Input
-local ageBox = Instance.new("TextBox")
-ageBox.Size = UDim2.new(1, -20, 0, 35)
-ageBox.Position = UDim2.new(0, 10, 0, 95)
-ageBox.PlaceholderText = "Age"
-ageBox.Text = ""
-ageBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
-ageBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-ageBox.Font = Enum.Font.Gotham
-ageBox.TextScaled = true
-ageBox.Parent = frame
-
--- Apply Button
-local applyButton = Instance.new("TextButton")
-applyButton.Size = UDim2.new(1, -20, 0, 35)
-applyButton.Position = UDim2.new(0, 10, 0, 140)
-applyButton.Text = "Apply"
-applyButton.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
-applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-applyButton.Font = Enum.Font.GothamBold
-applyButton.TextScaled = true
-applyButton.Parent = frame
-
--- Close button functionality
-closeButton.MouseButton1Click:Connect(function()
-	screenGui:Destroy()
-end)
-
--- Apply button functionality (you can adjust how pet data is stored)
-applyButton.MouseButton1Click:Connect(function()
-	local weight = tonumber(weightBox.Text)
-	local age = tonumber(ageBox.Text)
+-- Function to create editor UI
+local function createEditor()
+	local screenGui = Instance.new("ScreenGui", playerGui)
+	screenGui.Name = "PetEditorUI"
 	
-	if weight and age then
-		local pet = player:FindFirstChild("Pet") -- Replace with your actual pet object reference
-		if pet then
-			pet:SetAttribute("Weight", weight)
-			pet:SetAttribute("Age", age)
-			print("✅ Updated Pet Stats: Weight =", weight, "kg, Age =", age)
-		else
-			warn("❌ No pet found!")
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(0, 220, 0, 180)
+	frame.Position = UDim2.new(0.5, -110, 0.5, -90)
+	frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	frame.BorderSizePixel = 0
+	frame.Active = true
+	frame.Draggable = true
+	frame.Parent = screenGui
+
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -40, 0, 40)
+	title.Position = UDim2.new(0, 10, 0, 0)
+	title.Text = "🐾 Edit Pet Stats"
+	title.TextColor3 = Color3.fromRGB(130, 255, 130)
+	title.TextScaled = true
+	title.BackgroundTransparency = 1
+	title.Font = Enum.Font.GothamBold
+	title.Parent = frame
+
+	local closeButton = Instance.new("TextButton")
+	closeButton.Size = UDim2.new(0, 30, 0, 30)
+	closeButton.Position = UDim2.new(1, -35, 0, 5)
+	closeButton.Text = "X"
+	closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeButton.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
+	closeButton.Font = Enum.Font.GothamBold
+	closeButton.TextScaled = true
+	closeButton.Parent = frame
+
+	local weightBox = Instance.new("TextBox")
+	weightBox.Size = UDim2.new(1, -20, 0, 35)
+	weightBox.Position = UDim2.new(0, 10, 0, 50)
+	weightBox.PlaceholderText = "Weight (kg)"
+	weightBox.Text = ""
+	weightBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+	weightBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	weightBox.Font = Enum.Font.Gotham
+	weightBox.TextScaled = true
+	weightBox.Parent = frame
+
+	local ageBox = Instance.new("TextBox")
+	ageBox.Size = UDim2.new(1, -20, 0, 35)
+	ageBox.Position = UDim2.new(0, 10, 0, 95)
+	ageBox.PlaceholderText = "Age"
+	ageBox.Text = ""
+	ageBox.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+	ageBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	ageBox.Font = Enum.Font.Gotham
+	ageBox.TextScaled = true
+	ageBox.Parent = frame
+
+	local applyButton = Instance.new("TextButton")
+	applyButton.Size = UDim2.new(1, -20, 0, 35)
+	applyButton.Position = UDim2.new(0, 10, 0, 140)
+	applyButton.Text = "Apply"
+	applyButton.BackgroundColor3 = Color3.fromRGB(50, 200, 100)
+	applyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	applyButton.Font = Enum.Font.GothamBold
+	applyButton.TextScaled = true
+	applyButton.Parent = frame
+
+	-- Close GUI
+	closeButton.MouseButton1Click:Connect(function()
+		screenGui:Destroy()
+	end)
+
+	-- Apply button logic
+	applyButton.MouseButton1Click:Connect(function()
+		local newWeight = tonumber(weightBox.Text)
+		local newAge = tonumber(ageBox.Text)
+
+		if selectedPetFrame and newWeight and newAge then
+			for _, label in pairs(selectedPetFrame:GetChildren()) do
+				if label:IsA("TextLabel") then
+					if label.Text:find("KG") then
+						label.Text = string.format("[%.2f KG]", newWeight)
+					elseif label.Text:find("Age") then
+						label.Text = string.format("[Age %d]", newAge)
+					end
+				end
+			end
 		end
-	else
-		warn("❌ Invalid weight or age input.")
+	end)
+end
+
+-- Function to hook up pet buttons
+local function hookPetCards()
+	for _, petCard in pairs(petPanel:GetChildren()) do
+		if petCard:IsA("Frame") then
+			petCard.InputBegan:Connect(function(input)
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					selectedPetFrame = petCard
+					createEditor()
+				end
+			end)
+		end
 	end
-end)
+end
+
+-- Initialize on game load
+hookPetCards()
