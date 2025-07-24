@@ -4,17 +4,17 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Reference to your Pet UI Panel
-local petPanel = playerGui:WaitForChild("PetPanel") -- change this to your actual GUI name
-
--- Selected pet frame
+local petPanel = playerGui:WaitForChild("PetPanel") -- Must match your UI name
 local selectedPetFrame = nil
 
--- Function to create editor UI
-local function createEditor()
+-- 🐾 Create the draggable Pet Stat Editor
+local function openEditor()
+	if playerGui:FindFirstChild("PetEditorUI") then return end
+
 	local screenGui = Instance.new("ScreenGui", playerGui)
 	screenGui.Name = "PetEditorUI"
-	
+	screenGui.ResetOnSpawn = false
+
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(0, 220, 0, 180)
 	frame.Position = UDim2.new(0.5, -110, 0.5, -90)
@@ -43,6 +43,9 @@ local function createEditor()
 	closeButton.Font = Enum.Font.GothamBold
 	closeButton.TextScaled = true
 	closeButton.Parent = frame
+	closeButton.MouseButton1Click:Connect(function()
+		screenGui:Destroy()
+	end)
 
 	local weightBox = Instance.new("TextBox")
 	weightBox.Size = UDim2.new(1, -20, 0, 35)
@@ -53,6 +56,7 @@ local function createEditor()
 	weightBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 	weightBox.Font = Enum.Font.Gotham
 	weightBox.TextScaled = true
+	weightBox.ClearTextOnFocus = false
 	weightBox.Parent = frame
 
 	local ageBox = Instance.new("TextBox")
@@ -64,6 +68,7 @@ local function createEditor()
 	ageBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 	ageBox.Font = Enum.Font.Gotham
 	ageBox.TextScaled = true
+	ageBox.ClearTextOnFocus = false
 	ageBox.Parent = frame
 
 	local applyButton = Instance.new("TextButton")
@@ -76,23 +81,18 @@ local function createEditor()
 	applyButton.TextScaled = true
 	applyButton.Parent = frame
 
-	-- Close GUI
-	closeButton.MouseButton1Click:Connect(function()
-		screenGui:Destroy()
-	end)
-
-	-- Apply button logic
+	-- ✅ Apply new values to selected card
 	applyButton.MouseButton1Click:Connect(function()
-		local newWeight = tonumber(weightBox.Text)
-		local newAge = tonumber(ageBox.Text)
+		local weight = tonumber(weightBox.Text)
+		local age = tonumber(ageBox.Text)
 
-		if selectedPetFrame and newWeight and newAge then
+		if selectedPetFrame and weight and age then
 			for _, label in pairs(selectedPetFrame:GetChildren()) do
 				if label:IsA("TextLabel") then
 					if label.Text:find("KG") then
-						label.Text = string.format("[%.2f KG]", newWeight)
+						label.Text = string.format("[%.2f KG]", weight)
 					elseif label.Text:find("Age") then
-						label.Text = string.format("[Age %d]", newAge)
+						label.Text = string.format("[Age %d]", age)
 					end
 				end
 			end
@@ -100,19 +100,14 @@ local function createEditor()
 	end)
 end
 
--- Function to hook up pet buttons
-local function hookPetCards()
-	for _, petCard in pairs(petPanel:GetChildren()) do
-		if petCard:IsA("Frame") then
-			petCard.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					selectedPetFrame = petCard
-					createEditor()
-				end
-			end)
-		end
+-- 🖱️ Click pet card to open editor
+for _, petFrame in ipairs(petPanel:GetChildren()) do
+	if petFrame:IsA("Frame") then
+		petFrame.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 then
+				selectedPetFrame = petFrame
+				openEditor()
+			end
+		end)
 	end
 end
-
--- Initialize on game load
-hookPetCards()
